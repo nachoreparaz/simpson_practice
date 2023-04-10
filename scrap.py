@@ -25,20 +25,25 @@ class Scrapping():
                 continue
               dicc = {
                 'Nro capitulo': episode.find('div', class_ = 'numerando').get_text().split('-')[1].strip(),
-                'Nombre capitulo': episode.find('a').get_text(),
+                'Nombre capitulo': ' '.join(episode.find('a').get_text().split()),
                 'Temporada': episode.find('div', class_ = 'numerando').get_text().split('-')[0].strip(),
                 'Fecha emision': episode.find('span', class_ = 'date').get_text(),
                 'url': episode.find('a')['href']
               }
               print(dicc)
-              get_resumen = requests.get(dicc['url'])
-              resumen_txt = get_resumen.text
-              resumen_soup = BeautifulSoup(resumen_txt, 'lxml')
-              description = resumen_soup.find('p').get_text()
-              dicc['Resumen'] = description
-              result.append(dicc)
-              print('Episodio nro ', ep_count, ' realizado')
-              ep_count += 1
+              try:
+                get_resumen = requests.get(dicc['url'])
+                resumen_txt = get_resumen.text
+                resumen_soup = BeautifulSoup(resumen_txt, 'lxml')
+                description = resumen_soup.find('p').get_text()
+                dicc['Resumen'] = description
+                result.append(dicc)
+              except Exception as e:
+                print('Error al obtener el resumen del capítulo')
+              else:
+                print('Episodio nro ', ep_count, ' realizado')
+              finally:
+                ep_count += 1
           temp +=1
         
       return result
@@ -62,7 +67,12 @@ class Scrapping():
 # Fecha de emisión
 # URL del video
 
-# c = Scrapping()
-# c.get_data()
+def main():
+    c = Scrapping()
+    c.get_data()
+
+if __name__ == '__main__':
+    main()
+
 # c.write()
 # c.read(limit=3)
