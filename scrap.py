@@ -1,41 +1,57 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+from threading import Thread
 
-class Scrapping():
-    
+
+class Scrapping:
     def __init__(self):
-      self.url = 'https://simpsonizados.me/serie/los-simpson/'
-      self.__db = 'simpson_db.json'
+        self.url = 'https://simpsonizados.me/serie/los-simpson/'
+        self.__db = 'simpson_db.json'
 
     def get_data(self):
-      extracted_episodes_catalog = []
+        extracted_episodes_catalog = []
 
-      for season_number, season in enumerate(self._extract_seasons(), start=1):        
-          for episode_number, episode in enumerate(self._extract_episodes(season), start=1):
-              print(f'Realizando temporada: {season_number}x{episode_number}...')
+        for season in self._extract_seasons():
+            episodes = self._extract_episodes_catalog(season)
 
-              extracted_episode = {
-                'Nro capitulo': self._extract_episode_number(episode),
-                'Nombre capitulo': self._extract_episode_name(episode),
-                'Temporada': self._extract_season_number(episode),
-                'Fecha emision': self._extract_emission_date(episode),
-                'url': self.extract_episode_url(episode),
-              }
+            threads = [
+                Thread(target=self._extract_episode, args=(episode, extracted_episodes_catalog)) for episode in episodes
+            ]
 
-              try:                
-                extracted_episode['Resumen'] = self._extract_episode_summary(extracted_episode)
-                extracted_episodes_catalog.append(extracted_episode)
-              except Exception as e:
-                print('Error al obtener el resumen del capítulo', e)
-              else:
-                print('Episodio nro ', extracted_episode['Nro capitulo'], ' realizado')
-        
-      return extracted_episodes_catalog
-    
+            for thread in threads:
+                thread.start()
+
+            for thread in threads:
+                thread.join()
+
+        return extracted_episodes_catalog
+
+    def _extract_episode(self, episode, extracted_episodes_catalog):
+        episode_number = self._extract_episode_number(episode)
+        season_number = self._extract_season_number(episode)
+
+        print(f'Realizando temporada: {season_number}x{episode_number}...')
+
+        extracted_episode = {
+            'Nro capitulo': episode_number,
+            'Nombre capitulo': self._extract_episode_name(episode),
+            'Temporada': season_number,
+            'Fecha emision': self._extract_emission_date(episode),
+            'url': self.extract_episode_url(episode),
+        }
+
+        try:
+            extracted_episode['Resumen'] = self._extract_episode_summary(extracted_episode)
+            extracted_episodes_catalog.append(extracted_episode)
+        except Exception as e:
+            print('Error al obtener el resumen del capítulo', e)
+        else:
+            print('Episodio nro ', extracted_episode['Nro capitulo'], ' realizado')
+
     def _extract_seasons(self):
-      soup = self._get_soup(self.url)
-      return soup.find_all('ul', class_='episodios')
+        soup = self._get_soup(self.url)
+        return soup.find_all('ul', class_='episodios')
 
     def _extract_episode_summary(self, episode):
         soup = self._get_soup(episode['url'])
@@ -45,18 +61,18 @@ class Scrapping():
         return episode.find('a')['href']
 
     def _extract_emission_date(self, episode):
-        return episode.find('span', class_ = 'date').get_text()
+        return episode.find('span', class_='date').get_text()
 
     def _extract_season_number(self, episode):
-        return episode.find('div', class_ = 'numerando').get_text().split('-')[0].strip()
+        return episode.find('div', class_='numerando').get_text().split('-')[0].strip()
 
     def _extract_episode_name(self, episode):
         return ' '.join(episode.find('a').get_text().split())
 
     def _extract_episode_number(self, episode):
-        return episode.find('div', class_ = 'numerando').get_text().split('-')[1].strip()
+        return episode.find('div', class_='numerando').get_text().split('-')[1].strip()
 
-    def _extract_episodes(self, season):
+    def _extract_episodes_catalog(self, season):
         return season.find_all('li')
 
     def _get_soup(self, url):
@@ -64,32 +80,26 @@ class Scrapping():
         page = req.text
         soup = BeautifulSoup(page, 'lxml')
         return soup
-    
-    def write(self):
-      data = self.get_data()
-      with open(self.__db, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
 
-    def read(self, offset = 0, limit = None):
-      data = open(self.__db, 'r').read()
-      data_json = json.loads(data)
-      for i in range(offset, limit or len(data_json)):
-        print('\n', data_json[i], '\n')
+    def write(self, data):
+        with open(self.__db, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
+        return self.__db
 
-# Número del capítulo
-# Nombre del capítulo
-# Resumen del capítulo
-# Número de temporada
-# Fecha de emisión
-# URL del video
+    def read(self, offset=0, limit=None):
+        data = open(self.__db, 'r').read()
+        data_json = json.loads(data)
+        for i in range(offset, limit or len(data_json)):
+            print('\n', data_json[i], '\n')
+
 
 def main():
     c = Scrapping()
-    c.get_data()
+    extracted_episodes = c.get_data()
+    filename = c.write(extracted_episodes)
+    print(f"Scrapping finalizado, guardado en {filename}")
+
 
 if __name__ == '__main__':
     main()
-
-# c.write()
-# c.read(limit=3)
