@@ -2,6 +2,7 @@ from django.test import TestCase
 from scrapper.models import Episode
 from rest_framework.test import APIClient
 from rest_framework import status
+from datetime import datetime
 
 # Create your tests here.
 
@@ -9,7 +10,7 @@ from rest_framework import status
 class EpisodeTestCase(TestCase):
     def setUp(self):
         episode1 = {
-            "release_date": "1990-25-02",
+            "release_date": datetime.strptime("1990-25-02", "%Y-%d-%m"),
             "number": 8,
             "name": "La cabeza chiflada",
             "season_number": 1,
@@ -17,7 +18,7 @@ class EpisodeTestCase(TestCase):
             "summary": "Bart se convierte en amigo de Dolph, Jimbo y Kearney, un grupo de alborotadores locales. Tratando de impresionarlos, Bart decide cortar y robar la cabeza de la estatua de Jebediah Springfield. Al día siguiente, toda la ciudad llora por la estatua en objeto de actos de vandalismo y Bart descubre que sus nuevos amigos quieren atacar al vándalo. Esto le produce una sensación de remordimiento, luego, Bart confiesa esto a su familia y Homer y Bart retornan la cabeza hacia la estatua.",
         }
         self.client = APIClient()
-        self.client.post("/episodes/", episode1, format="json")
+        Episode.objects.create(**episode1)
 
     def test_get_episode(self):
         episode = self.client.get("/episodes/")
@@ -46,14 +47,13 @@ class EpisodeTestCase(TestCase):
         episode = self.client.get("/episodes/random/")
         self.assertIsInstance(episode.data, dict)
 
-    # def test_create_episode_error_when_not_pssing_all_properties(self):
-    #     data = {
-    #         "release_date": "1990-13-05",
-    #         "name": "La babysitter ataca de nuevo",
-    #         "season_number": 1,
-    #         "url": "https://simpsonizados.me/capitulo/los-simpson-1x13/",
-    #     }
-    #     response = self.client.post("/episodes/", data, format="json")
-    #     breakpoint()
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(Episode.objects.count(), 1)
+    def test_create_episode_error_when_not_pssing_all_properties(self):
+        data = {
+            "release_date": "1990-13-05",
+            "name": "La babysitter ataca de nuevo",
+            "season_number": 1,
+            "url": "https://simpsonizados.me/capitulo/los-simpson-1x13/",
+        }
+        response = self.client.post("/episodes/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Episode.objects.count(), 1)

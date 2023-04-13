@@ -7,7 +7,6 @@ from scrapper.views import EpisodeViewSet
 
 router = DefaultRouter()
 router.register(r"episodes", EpisodeViewSet, basename="episode")
-router.register(r"episodes/random", EpisodeViewSet, basename="random-episode")
 
 urlpatterns = [
     path("", include(router.urls)),
