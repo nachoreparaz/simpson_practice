@@ -6,6 +6,8 @@ from datetime import datetime
 
 
 class Scrapping:
+    api_url = "http://127.0.0.1:8000/episodes/"
+
     def __init__(self):
         self.url = "https://simpsonizados.me/serie/los-simpson/"
         self.__db = "simpson_db.json"
@@ -50,7 +52,7 @@ class Scrapping:
             extracted_episode["summary"] = self._extract_episode_summary(
                 extracted_episode
             )
-            requests.post("http://127.0.0.1:8000/episodes/", data=extracted_episode)
+            requests.post(self.api_url, data=extracted_episode)
             extracted_episodes_catalog.append(extracted_episode)
         except Exception as e:
             print("Error al obtener el resumen del capítulo", e)
