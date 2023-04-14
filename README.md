@@ -14,9 +14,9 @@ pip install -r requirements.txt
 
 # Configuración
 
-python manage.py migrate
+python3 manage.py migrate
 
-python manage.py createsuperuser
+python3 manage.py createsuperuser
 
 # Ejecutar
 
