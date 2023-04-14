@@ -42,7 +42,6 @@ class EpisodeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def random(self, request):
-        breakpoint()
         filter_episode_season = self.filter_queryset(self.queryset)
         if filter_episode_season.count() == 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
