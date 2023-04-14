@@ -23,6 +23,23 @@ class EpisodeViewSet(viewsets.ModelViewSet):
     serializer_class = EpisodeSerializer
     pagination_class = EpisodesPagination
 
+    def list(self, request):
+        episodes_per_season = request.query_params.get("season", None)
+        if not episodes_per_season:
+            page = self.paginate_queryset(self.queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            return Response(serializer.data)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        if queryset.count() == 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response(serializer.data)
+
     @action(detail=False, methods=["GET"])
     def random(self, request):
         random_episode = random.choice(self.filter_queryset(self.queryset))
