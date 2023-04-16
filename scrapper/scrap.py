@@ -31,7 +31,6 @@ class Scrapping:
 
             for thread in threads:
                 thread.join()
-
         return extracted_episodes_catalog
 
     def _extract_episode(self, episode, extracted_episodes_catalog):
@@ -52,12 +51,15 @@ class Scrapping:
             extracted_episode["summary"] = self._extract_episode_summary(
                 extracted_episode
             )
-            requests.post(self.api_url, data=extracted_episode)
             extracted_episodes_catalog.append(extracted_episode)
+            self.api_request(extracted_episode)
         except Exception as e:
             print("Error al obtener el resumen del capítulo", e)
         else:
             print("Episodio nro ", extracted_episode["number"], " realizado")
+
+    def api_request(self, extracted_episode):
+        return requests.post(self.api_url, data=extracted_episode)
 
     def _extract_seasons(self):
         soup = self._get_soup(self.url)
