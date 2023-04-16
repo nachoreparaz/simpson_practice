@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from scrapper.models import Episode
 from scrapper.serializer import EpisodeSerializer
 from rest_framework.response import Response
@@ -6,6 +5,8 @@ from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from django.core.exceptions import ValidationError
+
 import random
 
 
@@ -23,6 +24,16 @@ class EpisodeViewSet(viewsets.ModelViewSet):
     serializer_class = EpisodeSerializer
     pagination_class = EpisodesPagination
 
+    @action(detail=False, methods=["GET"])
+    def random(self, request):
+        filter_episode_season = self.filter_queryset(self.queryset)
+        if filter_episode_season.count() == 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        random_episode = random.choice(self.filter_queryset(self.queryset))
+        serializer = EpisodeSerializer(random_episode)
+        return Response(serializer.data)
+
     def list(self, request):
         episodes_per_season = request.query_params.get("season", None)
         if not episodes_per_season:
@@ -38,16 +49,6 @@ class EpisodeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(queryset, many=True)
 
-        return Response(serializer.data)
-
-    @action(detail=False, methods=["GET"])
-    def random(self, request):
-        filter_episode_season = self.filter_queryset(self.queryset)
-        if filter_episode_season.count() == 0:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        random_episode = random.choice(self.filter_queryset(self.queryset))
-        serializer = EpisodeSerializer(random_episode)
         return Response(serializer.data)
 
     def upsert(self, request, instance=None):
