@@ -46,6 +46,20 @@ class EpisodeTestCase(TestCase):
         url = self.get_url()
         episode = self.client.get(url)
         self.assertEqual(episode.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(episode.data["results"]), 2)
+        self.assertEqual(episode.data["results"][0]["number"], 8)
+        self.assertEqual(episode.data["results"][0]["season_number"], 1)
+        self.assertEqual(episode.data["results"][0]["name"], "La cabeza chiflada")
+        self.assertEqual(episode.data["results"][0]["release_date"], "1990-25-02")
+        self.assertEqual(
+            episode.data["results"][0]["url"],
+            "https://simpsonizados.me/capitulo/los-simpson-1x8/",
+        )
+        self.assertEqual(episode.data["results"][0]["release_date"], "1990-25-02")
+        self.assertEqual(
+            episode.data["results"][0]["summary"],
+            "Bart se convierte en amigo de Dolph, Jimbo y Kearney, un grupo de alborotadores locales. Tratando de impresionarlos, Bart decide cortar y robar la cabeza de la estatua de Jebediah Springfield. Al día siguiente, toda la ciudad llora por la estatua en objeto de actos de vandalismo y Bart descubre que sus nuevos amigos quieren atacar al vándalo. Esto le produce una sensación de remordimiento, luego, Bart confiesa esto a su familia y Homer y Bart retornan la cabeza hacia la estatua.",
+        )
 
     def test_get_episode_per_season(self):
         url = self.get_url(params="season=1")
