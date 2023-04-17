@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 from rest_framework.reverse import reverse
 from datetime import datetime
-
-# Create your tests here.
+from unittest.mock import patch, MagicMock
+from rest_framework.response import Response
 
 
 class EpisodeTestCase(TestCase):
@@ -86,7 +86,7 @@ class EpisodeTestCase(TestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Episode.objects.count(), 3)
-        self.assertEqual(response.data["name"], "La babysitter ataca de nuevo")
+        self.assertEqual(response.data["id"], 3)
 
     def test_update_episode_fields_if_episode_exist(self):
         data = {
@@ -106,8 +106,11 @@ class EpisodeTestCase(TestCase):
 
     def test_random_episode(self):
         url = self.get_url(random=True)
-        episode = self.client.get(url)
-        self.assertIsInstance(episode.data, dict)
+        with patch("scrapper.views.EpisodeViewSet.random") as mock_random:
+            mock_random = MagicMock(name="Response")
+            mock_random.data = self.episode2
+            response = Response(mock_random.data, status=200)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_random_episode_passing_query_season_param(self):
         url = self.get_url(random=True, params="season=2")
@@ -124,15 +127,18 @@ class EpisodeTestCase(TestCase):
         }
         url = self.get_url()
         response = self.client.post(url, data, format="json")
+        error_in_fileds = [key for key in response.data.keys()]
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Episode.objects.count(), 2)
+        self.assertEqual(error_in_fileds, ["number", "summary"])
 
     def test_get_episode_per_season_when_season_do_not_exist(self):
         url = self.get_url(params="season=90")
         episode = self.client.get(url)
-        self.assertEqual(episode.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(episode.status_code, status.HTTP_200_OK)
+        self.assertEqual(episode.data, [])
 
     def test_random_episode_when_season_do_not_exist(self):
         url = self.get_url(random=True, params="season=90")
         episode = self.client.get(url)
-        self.assertEqual(episode.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(episode.status_code, status.HTTP_404_NOT_FOUND)

@@ -10,9 +10,6 @@ from django.core.exceptions import ValidationError
 import random
 
 
-# Create your views here.
-
-
 class EpisodesPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = "page_size"
@@ -28,7 +25,7 @@ class EpisodeViewSet(viewsets.ModelViewSet):
     def random(self, request):
         filter_episode_season = self.filter_queryset(self.queryset)
         if filter_episode_season.count() == 0:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         random_episode = random.choice(self.filter_queryset(self.queryset))
         serializer = EpisodeSerializer(random_episode)
@@ -46,12 +43,12 @@ class EpisodeViewSet(viewsets.ModelViewSet):
 
         queryset = self.filter_queryset(self.get_queryset())
         if queryset.count() == 0:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response([], status=status.HTTP_200_OK)
         serializer = self.get_serializer(queryset, many=True)
 
         return Response(serializer.data)
 
-    def upsert(self, request, instance=None):
+    def _upsert(self, request, instance=None):
         serializer = self.serializer_class(
             instance=instance, data=request.data, partial=instance is not None
         )
@@ -63,8 +60,8 @@ class EpisodeViewSet(viewsets.ModelViewSet):
         name = request.data.get("name")
         existing_episodes = Episode.objects.filter(name=name)
         if existing_episodes.exists():
-            return self.upsert(request, instance=existing_episodes[0])
-        return self.upsert(request)
+            return self._upsert(request, instance=existing_episodes[0])
+        return self._upsert(request)
 
     def filter_queryset(self, queryset):
         season = self.request.query_params.get("season")
