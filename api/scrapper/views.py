@@ -49,7 +49,7 @@ class EpisodeViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def _upsert(self, request, instance=None):
-        serializer = self.serializer_class(
+        serializer = self.get_serializer(
             instance=instance, data=request.data, partial=instance is not None
         )
         serializer.is_valid(raise_exception=True)

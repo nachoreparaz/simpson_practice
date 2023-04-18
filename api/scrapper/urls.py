@@ -5,6 +5,4 @@ from scrapper.views import EpisodeViewSet
 router = DefaultRouter()
 router.register(r"episodes", EpisodeViewSet, basename="episode")
 
-urlpatterns = [
-    path("", include(router.urls)),
-]
+urlpatterns = router.urls
