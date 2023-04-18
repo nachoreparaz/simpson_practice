@@ -23,11 +23,11 @@ class EpisodeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def random(self, request):
-        filter_episode_season = self.filter_queryset(self.queryset)
-        if filter_episode_season.count() == 0:
+        filter_episode_queryset = self.filter_queryset(self.queryset)
+        if filter_episode_queryset.count() == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        random_episode = random.choice(self.filter_queryset(self.queryset))
+        random_episode = random.choice(filter_episode_queryset)
         serializer = EpisodeSerializer(random_episode)
         return Response(serializer.data)
 

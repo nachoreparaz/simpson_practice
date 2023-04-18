@@ -1,11 +1,12 @@
 from django.test import TestCase
 from scrapper.models import Episode
+from scrapper.views import EpisodeViewSet
+from scrapper.serializer import EpisodeSerializer
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 from rest_framework.reverse import reverse
 from datetime import datetime
-from unittest.mock import patch, MagicMock
-from rest_framework.response import Response
+from unittest.mock import patch
 
 
 class EpisodeTestCase(TestCase):
@@ -39,6 +40,7 @@ class EpisodeTestCase(TestCase):
     def setUp(self):
         self.request = APIRequestFactory().get("/")
         self.client = APIClient()
+        self.episode_viewset = EpisodeViewSet()
         Episode.objects.create(**self.episode1)
         Episode.objects.create(**self.episode2)
 
@@ -104,19 +106,22 @@ class EpisodeTestCase(TestCase):
         self.assertEqual(response.data["name"], self.episode1["name"])
         self.assertNotEqual(response.data["number"], self.episode1["number"])
 
-    def test_random_episode(self):
+    @patch("scrapper.views.random.choice")
+    def test_random_episode(self, mock_random):
+        mock_random.return_value = Episode.objects.get(id=1)
         url = self.get_url(random=True)
-        with patch("scrapper.views.EpisodeViewSet.random") as mock_random:
-            mock_random = MagicMock(name="Response")
-            mock_random.data = self.episode2
-            response = Response(mock_random.data, status=200)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], 1)
 
-    def test_random_episode_passing_query_season_param(self):
+    @patch("scrapper.views.random.choice")
+    def test_random_episode_passing_query_season_param(self, mock_random):
+        mock_random.return_value = Episode.objects.get(season_number=2)
         url = self.get_url(random=True, params="season=2")
-        episode = self.client.get(url)
-        self.assertIsInstance(episode.data, dict)
-        self.assertEqual(episode.data["season_number"], 2)
+        response = self.client.get(url)
+        self.assertIsInstance(response.data, dict)
+        self.assertEqual(response.data["season_number"], 2)
+        self.assertEqual(response.data["id"], 2)
 
     def test_create_episode_error_when_not_passing_all_properties(self):
         data = {
@@ -127,10 +132,9 @@ class EpisodeTestCase(TestCase):
         }
         url = self.get_url()
         response = self.client.post(url, data, format="json")
-        error_in_fileds = [key for key in response.data.keys()]
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Episode.objects.count(), 2)
-        self.assertEqual(error_in_fileds, ["number", "summary"])
+        self.assertEqual(set(response.data.keys()), {"number", "summary"})
 
     def test_get_episode_per_season_when_season_do_not_exist(self):
         url = self.get_url(params="season=90")
