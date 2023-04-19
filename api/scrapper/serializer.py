@@ -2,6 +2,7 @@ from scrapper.models import Episode
 from rest_framework import serializers
 from datetime import datetime
 from django.utils.translation import gettext
+from django.contrib.auth.models import User
 
 
 class CustomizeDateField(serializers.Field):
@@ -25,3 +26,21 @@ class EpisodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Episode
         fields = "__all__"
+
+
+class UserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "password")
+
+    def create(self, validated_data):
+        user = User.objects.create(
+            username=validated_data["username"], email=validated_data["email"]
+        )
+        user.set_password(validated_data["password"])
+        user.save()
+        return user
